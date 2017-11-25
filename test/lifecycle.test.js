@@ -78,6 +78,25 @@ test("onremove", done => {
   patch(document.body, node, view(false))
 })
 
+test("deep onremove", done => {
+  var removed = false
+  var view = value =>
+    value
+      ? h("p", {},
+          h("p", {},
+            h("p", {
+              onremove() {
+                removed = true
+              }
+            })))
+      : h("p", {})
+
+  let node = view(true)
+  patch(document.body, null, node)
+  patch(document.body, node, view(false))
+  expect(removed).toBe(true)
+})
+
 test("event bubling", done => {
   var view = value =>
     h(
