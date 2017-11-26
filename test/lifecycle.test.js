@@ -78,23 +78,49 @@ test("onremove", done => {
   patch(document.body, node, view(false))
 })
 
-test("deep onremove", done => {
-  var removed = false
+test("ondestroy", done => {
+  var events = []
   var view = value =>
     value
-      ? h("p", {},
-          h("p", {},
-            h("p", {
+      ? h(
+          "p",
+          {
+            onremove() {
+              events.push("removed 1") // never called
+            },
+            ondestroy() {
+              events.push("destroyed 1") // never called
+            }
+          },
+          h(
+            "p",
+            {
+              id: "A",
               onremove() {
-                removed = true
+                events.push("removed 2") // called first
+              },
+              ondestroy(element) {
+                events.push("destroyed 2: " + element.id) // called third
+                throw new Error(element.id)
               }
-            })))
+            },
+            h(
+              "p",
+              {
+                id: "B",
+                onremove() {
+                  events.push("removed 3") // never called
+                },
+                ondestroy(element) {
+                  events.push("destroyed 3: " + element.id) // called second
+                }
+              })))
       : h("p", {})
 
   let node = view(true)
   patch(document.body, null, node)
   patch(document.body, node, view(false))
-  expect(removed).toBe(true)
+  expect(events).toEqual(["removed 2", "destroyed 3: B", "destroyed 2: A"])
 })
 
 test("event bubling", done => {
