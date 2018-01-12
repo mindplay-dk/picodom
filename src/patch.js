@@ -1,7 +1,12 @@
 var callbacks = []
 
+var noNode = {
+  props: {},
+  children: []
+}
+
 export function patch(parent, oldNode, newNode) {
-  var element = patchElement(parent, parent.children[0], oldNode, newNode)
+  var element = patchElement(parent, parent.children[0], newNode)
 
   for (var cb; (cb = callbacks.pop()); cb()) {}
 
@@ -66,6 +71,9 @@ function createElement(node, isSVG) {
       setElementProp(element, i, node.props[i])
     }
   }
+
+  element.vNode = node
+
   return element
 }
 
@@ -110,8 +118,10 @@ function removeElement(parent, element, node) {
   }
 }
 
-function patchElement(parent, element, oldNode, node, isSVG, nextSibling) {
-  if (oldNode == null) {
+function patchElement(parent, element, node, isSVG, nextSibling) {
+  var oldNode = (element && element.vNode) || noNode
+
+  if (oldNode === noNode) {
     element = parent.insertBefore(createElement(node, isSVG), element)
   } else if (node.type != null && node.type === oldNode.type) {
     updateElement(element, oldNode.props, node.props)
@@ -154,19 +164,19 @@ function patchElement(parent, element, oldNode, node, isSVG, nextSibling) {
 
       if (null == newKey) {
         if (null == oldKey) {
-          patchElement(element, oldElement, oldChild, newChild, isSVG)
+          patchElement(element, oldElement, newChild, isSVG)
           j++
         }
         i++
       } else {
         if (oldKey === newKey) {
-          patchElement(element, keyedNode[0], keyedNode[1], newChild, isSVG)
+          patchElement(element, keyedNode[0], newChild, isSVG)
           i++
         } else if (keyedNode[0]) {
           element.insertBefore(keyedNode[0], oldElement)
-          patchElement(element, keyedNode[0], keyedNode[1], newChild, isSVG)
+          patchElement(element, keyedNode[0], newChild, isSVG)
         } else {
-          patchElement(element, oldElement, null, newChild, isSVG)
+          patchElement(element, oldElement, newChild, isSVG)
         }
 
         j++
@@ -201,5 +211,8 @@ function patchElement(parent, element, oldNode, node, isSVG, nextSibling) {
       removeElement(parent, nextSibling, oldNode)
     }
   }
+
+  element.vNode = node
+
   return element
 }
